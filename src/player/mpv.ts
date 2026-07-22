@@ -1,7 +1,6 @@
 import type { Subprocess } from "bun";
 import type { Player, PlayerEvents, PlayerStatus, Track } from "../types.ts";
-
-const HOMEBREW_MPV = "/opt/homebrew/bin/mpv";
+import { assertPlaybackDeps, findBinary } from "../deps.ts";
 
 type PendingRequest = {
   resolve: (data: unknown) => void;
@@ -17,25 +16,6 @@ type IpcResponse = {
   name?: string;
 };
 
-/**
- * Resolve the mpv binary: prefer a plain "mpv" on PATH, fall back to the
- * default Homebrew location on Apple Silicon.
- */
-function resolveMpvBinary(): string | null {
-  const onPath = Bun.which("mpv");
-  if (onPath) return onPath;
-  try {
-    // statSync-free existence check via Bun.file
-    if (Bun.file(HOMEBREW_MPV).size >= 0) {
-      // size access does not guarantee existence for all files, so also
-      // confirm the path is executable-ish by checking it resolves.
-      return HOMEBREW_MPV;
-    }
-  } catch {
-    // ignore
-  }
-  return null;
-}
 
 /**
  * Only one ytmtui-owned mpv may play at a time, across all ytmtui processes.
@@ -122,11 +102,12 @@ class MpvPlayer implements Player {
     await this.teardown();
     await killOtherInstances();
 
-    const bin = resolveMpvBinary();
-    if (!bin) {
-      const err = new Error(
-        "mpv not found. Install it with: brew install mpv yt-dlp",
-      );
+    let bin: string;
+    try {
+      assertPlaybackDeps();
+      bin = findBinary("mpv")!;
+    } catch (e) {
+      const err = e as Error;
       this.emit("error", err);
       throw err;
     }
