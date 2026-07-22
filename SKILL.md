@@ -65,25 +65,18 @@ ytmtui --version   # version string
 
 Layout: search input (top) → results list (middle) → player status bar (bottom: ▶/⏸ icon, track, position/duration, volume).
 
-| Key | Context | Action |
-| --- | --- | --- |
-| type + `Enter` | search box | run search, focus results |
+| Key               | Context      | Action                            |
+| ----------------- | ------------ | --------------------------------- |
+| type + `Enter`    | search box   | run search, focus results         |
 | `↑`/`↓` + `Enter` | results list | select and play highlighted track |
-| `Space` | list focused | toggle play/pause |
-| `+` / `-` | list focused | volume ±5 |
-| `/` | anywhere | focus search box |
-| `Esc` | search box | jump to results list |
-| `q` / `Ctrl+C` | anywhere | quit (stops playback) |
+| `Space`           | list focused | toggle play/pause                 |
+| `+` / `-`         | list focused | volume ±5                         |
+| `/`               | anywhere     | focus search box                  |
+| `Esc`             | search box   | jump to results list              |
+| `q` / `Ctrl+C`    | anywhere     | quit (stops playback)             |
 
 ## Playback behavior (both modes)
 
 - Audio-only mpv stream (m4a preferred), no video download — starts in ~2-4s.
 - macOS media keys / Now Playing widget control playback automatically; track title and artist are shown there.
 - Volume range 0–100.
-
-## Environment reference
-
-| Variable | Purpose |
-| --- | --- |
-| `YTMTUI_API_KEY` | YouTube Data API v3 key (primary) |
-| `YT_API_KEY` | fallback if `YTMTUI_API_KEY` unset |
