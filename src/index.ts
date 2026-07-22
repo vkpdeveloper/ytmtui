@@ -109,6 +109,11 @@ async function playTrack(track: Track, json: boolean): Promise<void> {
   };
 
   player!.on("trackEnd", () => void shutdown(0));
+  // Exit when playback stops for any reason — e.g. another ytmtui instance
+  // took over and killed our mpv (single-song-at-a-time policy).
+  player!.on("statusChange", (status) => {
+    if (status.state === "stopped") void shutdown(0);
+  });
   player!.on("error", (err: Error) => fail(err.message, json));
   process.on("SIGINT", () => void shutdown(0));
 

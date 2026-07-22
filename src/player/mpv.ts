@@ -37,6 +37,26 @@ function resolveMpvBinary(): string | null {
   return null;
 }
 
+/**
+ * Only one ytmtui-owned mpv may play at a time, across all ytmtui processes.
+ * Every instance is identifiable by its ytmtui socket path argument, so kill
+ * any surviving ones (from other CLI/TUI invocations) and sweep stale sockets.
+ */
+async function killOtherInstances(): Promise<void> {
+  const pkill = Bun.spawn({
+    cmd: ["pkill", "-f", "input-ipc-server=/tmp/ytmtui-mpv-"],
+    stdout: "ignore",
+    stderr: "ignore",
+  });
+  await pkill.exited;
+  const rm = Bun.spawn({
+    cmd: ["sh", "-c", "rm -f /tmp/ytmtui-mpv-*.sock"],
+    stdout: "ignore",
+    stderr: "ignore",
+  });
+  await rm.exited;
+}
+
 class MpvPlayer implements Player {
   private proc: Subprocess | null = null;
   private socket: import("bun").Socket<undefined> | null = null;
@@ -97,8 +117,10 @@ class MpvPlayer implements Player {
   async play(track: Track): Promise<void> {
     if (this.disposed) throw new Error("Player has been disposed");
 
-    // Tear down any existing playback before starting fresh.
+    // Tear down any existing playback before starting fresh, and stop any
+    // mpv started by other ytmtui processes — one song at a time, globally.
     await this.teardown();
+    await killOtherInstances();
 
     const bin = resolveMpvBinary();
     if (!bin) {
@@ -127,7 +149,13 @@ class MpvPlayer implements Player {
           bin,
           "--no-video",
           "--no-terminal",
-          "--ytdl-format=bestaudio",
+          // Audio-only, fast startup: prefer m4a (no remux), never fetch video
+          // streams, skip playlist probing and cover-art decoding.
+          "--ytdl-format=bestaudio[ext=m4a]/bestaudio/best",
+          "--ytdl-raw-options=no-playlist=",
+          "--audio-display=no",
+          "--cache=yes",
+          "--demuxer-readahead-secs=10",
           `--input-ipc-server=${socketPath}`,
           `--force-media-title=${mediaTitle}`,
           `--volume=${this.volume}`,
