@@ -1,8 +1,12 @@
 {
   "name": "ytmtui",
-  "module": "src/index.tsx",
+  "version": "0.1.0",
+  "module": "src/index.ts",
   "type": "module",
   "private": true,
+  "bin": {
+    "ytmtui": "src/index.ts"
+  },
   "scripts": {
     "dev": "bun run --watch src/index.ts"
   },
